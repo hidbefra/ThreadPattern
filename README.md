@@ -31,3 +31,5 @@ Englisch
 
       Enter the circle center point in Fadenlegen.dat in the variable KM. Orientation A, B, C adapt to your own gripper.
       Copy points [*] from ausgabe.txt
+
+![alt text](https://github.com/hidbefra/ThreadPattern/blob/main/herz-blur3.png?raw=true)
