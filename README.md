@@ -34,3 +34,5 @@ Englisch
       Copy points [*] from ausgabe.txt
 
 ![alt text](https://github.com/hidbefra/ThreadPattern/blob/main/herz-blur3.png?raw=true)
+
+![alt text](https://github.com/hidbefra/ThreadPattern/blob/main/Bilder/ergebnis.jpg?raw=true)
