@@ -1,6 +1,6 @@
 # ThreadPattern
-Thread pattern
 Deutsch:
+    
     Dieses Projekt dient zum schwarz weiss bilder in Fadenbilder zu verwandeln. 
 
     Die berechung der Fäden basiert auf python mit openCV. 
@@ -17,6 +17,7 @@ Deutsch:
       Punkte[*] aus ausgabe.txt kopieren
 
 Englisch
+    
     This project is used to turn black and white pictures into thread pictures.
 
     The calculation of the threads is based on python with openCV.
