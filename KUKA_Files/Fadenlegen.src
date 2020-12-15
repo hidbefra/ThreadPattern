@@ -39,7 +39,7 @@ DEF My_Home ()
     
     $IPO_MODE = #BASE ;$IPO_MODE tells which of the two frames (tool/base) is stationary
     
-    $APO.CDIS = 100 ;Überschleifparameter
+    $APO.CDIS = 100 ;Ãœberschleifparameter
     
     $H_POS = MyHome
     PTP MyHome 
@@ -53,7 +53,7 @@ DEF fahren_PTP ()
     BASE(6)
     
     $APO.CDIS = 100
-    $APO.CPTP = 50 ;Prozentual überschleifen
+    $APO.CPTP = 50 ;Prozentual Ã¼berschleifen
     
     PTP test1
     
@@ -77,6 +77,8 @@ DEF NagelAnfahren(Npos:IN)
    rot.B = KM.B
    rot.C = KM.C
    
+   ;Basis Transformation, mot :rot wird der Nulpunkt in die mitte des kreis geschoben und auf den
+   ;gewÃ¼nschten nagel ausgerichtet. Die Trasformation :{X296 ...} schiebt den Nulpunkt schlusentlich nach aussen
    $BASE = (BASE_DATA[6]:rot):{X 296, Y 0, Z 0, A 0, B 0, C 0}
    
    TOOL(6)
@@ -117,7 +119,7 @@ DEF wickeln()
    p1.z = z
    LIN p1
    
-   ;zurück und hoch
+   ;zurÃ¼ck und hoch
    p1.x = -10
    p1.z = -10
    LIN p1
@@ -136,7 +138,7 @@ DEF wickeln()
    p1.z = z
    LIN p1
    
-   ;zurück und hoch
+   ;zurÃ¼ck und hoch
    p1.x = -10
    p1.z = -10
    LIN p1
