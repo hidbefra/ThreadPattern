@@ -1,0 +1,211 @@
+&ACCESS RVO
+&REL 6
+&PARAM DISKPATH = KRC:\R1\myProgramme\Mahlen
+DEF Bohren ( )
+
+
+   GLOBAL INTERRUPT DECL 3 WHEN $STOPMESS == TRUE DO IR_STOPM ( )
+   INTERRUPT ON 3 
+   BAS (#INITMOV, 0 )
+   My_Home () 
+   
+   KMAnfahren ()
+   ;spez_NagelAnfahren(90)
+   
+   
+   RingBohren()
+   
+   My_Home ()
+
+    
+   LOOP
+        
+   ENDLOOP 
+
+
+
+
+END
+
+DEF My_Home ()
+    
+    
+    VEL_PTP(5) ;Geschwindikeit PTP in %
+    ACC_PTP(50) ;Beschleunigung PTP in %
+    TOOL(0)
+    BASE(0)
+    
+    $IPO_MODE = #BASE ;$IPO_MODE tells which of the two frames (tool/base) is stationary
+    
+    $APO.CDIS = 100 ;Überschleifparameter
+    
+    $H_POS = MyHome
+    PTP MyHome 
+END
+
+
+
+DEF fahren_CP ()
+
+    ;XP2 = {X 270.51, Y 129.42, Z 50, A 0.0,B -110.000,C 180.000,S'B110',T'B011010',E1 0.0,E2 0.0,E3 0.0,E4 0.0,E5 0.0,E6 0.0}
+    
+    TOOL(5)
+    BASE(6)
+    VEL_CP(0.6) ;m/s
+    ACC_CP(50)
+    
+    $APO.CDIS = 5
+    $ORI_TYPE = #VAR
+    
+    LIN KM
+    
+END
+
+DEF fahren_PTP ()
+
+    
+    ;XP2 = {X 270.51, Y 129.42, Z 50, A 0.0,B -110.000,C 180.000,S'B110',T'B011010',E1 0.0,E2 0.0,E3 0.0,E4 0.0,E5 0.0,E6 0.0}
+    
+    $IPO_MODE = #BASE ;$IPO_MODE tells which of the two frames (tool/base) is stationary
+    
+    TOOL(5)
+    BASE(6)
+    VEL_PTP (5) ;In %der Maxgeschwindikeit
+    ACC_PTP (10) ;In % Der max Beschleunigung
+    
+    $APO.CDIS = 100
+    $APO.CPTP = 50 ;Prozentual überschleifen
+    
+    PTP MyHome C_PTP
+    
+    ;PTP XP3 C_DIS
+  
+END
+
+DEF KMAnfahren ()
+
+    ;XP2 = {X 270.51, Y 129.42, Z 50, A 0.0,B -110.000,C 180.000,S'B110',T'B011010',E1 0.0,E2 0.0,E3 0.0,E4 0.0,E5 0.0,E6 0.0}
+    
+    TOOL(5)
+    BASE(6)
+    VEL_PTP (5) ;In %der Maxgeschwindikeit
+    ACC_PTP (50) ;In % Der max Beschleunigung
+    
+    $APO.CDIS = 50
+    $APO.CPTP = 50 ;Prozentual überschleifen
+    
+    PTP KM ;C_PTP
+
+END
+
+DEF RingBohren()
+   DECL INT I
+
+   FOR I = 92 TO 180 STEP 1
+      NagelBohren(I)
+   
+   ENDFOR
+
+
+END
+
+DEF NagelBohren(Npos:IN)
+   DECL INT Npos
+   DECL REAL Winkel
+   DECL FRAME rot, PosBohren, schwenken
+   
+   ;x=292
+   PosBohren = {X 0,Y 0,Z 0,A 0,B -90,C -20}
+   
+   
+   ;schwenken = {X 0, Y 0, Z 0, A 0, B 20, C 0}
+   ;PosBohren = PosBohren
+   
+   Winkel = 360/180*Npos
+   
+   rot = {X 0, Y 0, Z 0, A 0, B 0, C 0}
+   rot.x = KM.X
+   rot.y = KM.Y
+   rot.Z = 0
+   rot.A = Winkel
+   
+   $BASE = (BASE_DATA[6]:rot):{X 292, Y 0, Z 0, A 0, B 20, C 0}
+   
+   TOOL(5)
+   VEL_CP(0.2) ;m/s
+   ACC_CP(50)
+   VEL_PTP (2)
+    
+   $ORI_TYPE = #VAR
+
+   PTP {X 0, Y 0, Z 50, A 0, B 0, C 0}:PosBohren
+   PTP PosBohren:{X 2, Y 0, Z 0, A 0, B 0, C 0}
+   VEL_CP(0.001)
+   LIN PosBohren:{X -1, Y 0, Z 0, A 0, B 0, C 0}
+   LIN PosBohren
+   
+   pack_drilling()
+   
+   LIN PosBohren:{X 4, Y 0, Z 0, A 0, B 0, C 0}
+   PTP {X 0, Y 0, Z 50, A 0, B 0, C 0}:PosBohren
+
+END
+
+
+DEF pack_drilling()
+   DECL INT I
+   DECL E6POS StartPos
+   DECL FRAME vortrieb, rueckzug
+   
+   vortrieb = {X 0, Y 0, Z 0, A 0, B 0, C 0}
+   rueckzug = {X 1, Y 0, Z 0, A 0, B 0, C 0}
+   
+   StartPos = $POS_ACT
+
+   FOR I = 0 TO 9 STEP 1
+      
+      vortrieb.X = -1 *(I*1)+0.5
+      VEL_CP(0.01)
+      LIN StartPos:vortrieb
+      
+      vortrieb.X = -1 *(I*1)
+      VEL_CP(0.003)
+      LIN StartPos:vortrieb
+      
+      VEL_CP(0.01)
+      LIN StartPos:rueckzug
+   
+   ENDFOR
+
+END
+
+DEF spez_NagelAnfahren(Npos:IN)
+   DECL INT Npos
+   DECL REAL Winkel
+   DECL FRAME rot, PosBohren
+   DECL E6POS spez
+   
+   PosBohren = {X 300,Y 0,Z 0,A 0,B -90,C -20}
+   
+   Winkel = 360/180*Npos
+   
+   rot = {X 0, Y 0, Z 0, A 0, B 0, C 0}
+   rot.x = KM.X
+   rot.y = KM.Y
+   rot.Z = 50
+   rot.A = Winkel
+   
+   $BASE = BASE_DATA[6]:rot
+   
+    TOOL(5)
+    VEL_CP(0.2) ;m/s
+    ACC_CP(50)
+    
+    $ORI_TYPE = #VAR
+    
+    spez = PosBohren
+    spez.T = 'B011010'
+    PTP spez
+
+END
+

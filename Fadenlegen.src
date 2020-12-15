@@ -1,0 +1,163 @@
+&ACCESS RVP
+&REL 20
+&PARAM DISKPATH = KRC:\R1\myProgramme\Mahlen
+DEF  Fadenlegen ( )
+   DECL INT i, Position
+      
+   GLOBAL INTERRUPT DECL 3 WHEN $STOPMESS==TRUE DO IR_STOPM ( )
+   INTERRUPT ON 3 
+   BAS (#INITMOV,0 )
+
+   VEL_PTP(5) ;Geschwindikeit PTP in %
+   ACC_PTP(50) ;Beschleunigung PTP in %
+   
+   
+   My_Home ()
+
+   Position = 258
+   FOR i = Position TO len_Punkte STEP 1
+      NagelAnfahren(Punkte[i])
+      LetztePos = i
+   ENDFOR
+  
+   
+   
+   LOOP
+        
+   ENDLOOP 
+
+     
+END
+
+DEF My_Home ()
+    
+    
+    VEL_PTP(5) ;Geschwindikeit PTP in %
+    ACC_PTP(100) ;Beschleunigung PTP in %
+    TOOL(6)
+    BASE(6)
+    
+    $IPO_MODE = #BASE ;$IPO_MODE tells which of the two frames (tool/base) is stationary
+    
+    $APO.CDIS = 100 ;Überschleifparameter
+    
+    $H_POS = MyHome
+    PTP MyHome 
+END
+
+DEF fahren_PTP ()
+    
+    $IPO_MODE = #BASE ;$IPO_MODE tells which of the two frames (tool/base) is stationary
+    
+    TOOL(6)
+    BASE(6)
+    
+    $APO.CDIS = 100
+    $APO.CPTP = 50 ;Prozentual überschleifen
+    
+    PTP test1
+    
+    ;PTP XP3 C_DIS
+  
+END
+
+
+DEF NagelAnfahren(Npos:IN)
+   DECL INT Npos
+   DECL REAL Winkel
+   DECL FRAME rot, PosBohren, schwenken
+
+   Winkel = 360/180*Npos
+   
+   rot = {X 0, Y 0, Z 0, A 0, B 0, C 0}
+   rot.x = KM.X
+   rot.y = KM.Y
+   rot.Z = 0
+   rot.A = Winkel + 180
+   rot.B = KM.B
+   rot.C = KM.C
+   
+   $BASE = (BASE_DATA[6]:rot):{X 296, Y 0, Z 0, A 0, B 0, C 0}
+   
+   TOOL(6)
+   VEL_CP(0.05) ;m/s
+   ACC_CP(100)
+   VEL_PTP (2)
+    
+   $ORI_TYPE = #VAR
+
+   wickeln()
+
+END
+
+DEF wickeln()
+   DECL FRAME p1, p2
+   DECL REAL w,z
+   
+   z = -3
+   ;vorpos
+   p1 = {X -15, Y -5, Z -15, A 0, B 0, C 0}
+   p1.y = -5
+   VEL_CP(0.4)
+   LIN p1
+   VEL_CP(0.05)
+   
+   ;anfahren
+   p1.z = -5
+   LIN p1
+   VEL_CP(0.05)
+   
+   ;zwischendurchfahren
+   p1.x = 5
+   p1.z = z
+   LIN p1
+   
+   ;versetzen
+   p1.y = 5
+   p1.z = z
+   LIN p1
+   
+   ;zurück und hoch
+   p1.x = -10
+   p1.z = -10
+   LIN p1
+   
+   ;versetzen
+   p1.y = -5
+   LIN p1
+   
+   ;zwischendurchfahren
+   p1.x = 5
+   p1.z = 0
+   LIN p1
+   
+   ;versetzen
+   p1.y = 5
+   p1.z = z
+   LIN p1
+   
+   ;zurück und hoch
+   p1.x = -10
+   p1.z = -10
+   LIN p1
+   
+   ;drehen
+   p1.A = 180 * turn 
+   VEL_CP(0.4)
+   LIN p1
+ 
+   
+   ;hinaus fahren
+   p1.x = -15
+   p1.z = -15
+   LIN p1
+   
+   IF $AXIS_ACT.A6 > 0 THEN
+    turn = 1
+   else
+     turn = -1
+   ENDIF
+
+
+END
+
