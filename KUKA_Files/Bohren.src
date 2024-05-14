@@ -12,8 +12,8 @@ DEF Bohren ( )
    KMAnfahren ()
    ;spez_NagelAnfahren(90)
    
-   
    RingBohren()
+   
    
    My_Home ()
 
@@ -101,7 +101,7 @@ END
 DEF RingBohren()
    DECL INT I
 
-   FOR I = 92 TO 180 STEP 1
+   FOR I = 45 TO 135 STEP 1
       NagelBohren(I)
    
    ENDFOR
@@ -115,7 +115,7 @@ DEF NagelBohren(Npos:IN)
    DECL FRAME rot, PosBohren, schwenken
    
    ;x=292
-   PosBohren = {X 0,Y 0,Z 0,A 0,B -90,C -20}
+   PosBohren = {X 0,Y 0,Z 0,A 0,B -90,C 30}
    
    
    ;schwenken = {X 0, Y 0, Z 0, A 0, B 20, C 0}
@@ -134,23 +134,29 @@ DEF NagelBohren(Npos:IN)
    TOOL(5)
    VEL_CP(0.2) ;m/s
    ACC_CP(50)
-   VEL_PTP (2)
+   VEL_PTP (4)
     
    $ORI_TYPE = #VAR
 
-   PTP {X 0, Y 0, Z 50, A 0, B 0, C 0}:PosBohren
+   PTP {X 0, Y 0, Z 30, A 0, B 0, C 0}:PosBohren
    PTP PosBohren:{X 2, Y 0, Z 0, A 0, B 0, C 0}
-   VEL_CP(0.001)
-   LIN PosBohren:{X -1, Y 0, Z 0, A 0, B 0, C 0}
-   LIN PosBohren
    
+   anbohren(PosBohren)
    pack_drilling()
    
+   VEL_CP(0.2)
    LIN PosBohren:{X 4, Y 0, Z 0, A 0, B 0, C 0}
-   PTP {X 0, Y 0, Z 50, A 0, B 0, C 0}:PosBohren
+   PTP {X 0, Y 0, Z 30, A 0, B 0, C 0}:PosBohren
 
 END
 
+DEF anbohren(myPos:IN)
+   DECL FRAME myPos
+   VEL_CP(0.001)
+   LIN myPos:{X -1, Y 0, Z 0, A 0, B 0, C 0}
+   VEL_CP(0.2)
+   LIN myPos
+END
 
 DEF pack_drilling()
    DECL INT I

@@ -1,23 +1,127 @@
 &ACCESS RVP
-&REL 20
+&REL 24
 &PARAM DISKPATH = KRC:\R1\myProgramme\Mahlen
 DEF  Fadenlegen ( )
-   DECL INT i, Position
+   DECL INT i, Position,Nagel_Nr,privius_Nagel_Nr
+   DECL REAL Winkel,Stur, Rx, Ry, Ryoff, Rxoff
+   DECL POS myPos
+   Frame p1, p2, p21, p3, p4, ch0, ch1,ch2,ch3,ch4,offset , rr, rwinkel, Nagel
+   E6POS ZIELP, STARTP, stp1, stp2,stp3
       
    GLOBAL INTERRUPT DECL 3 WHEN $STOPMESS==TRUE DO IR_STOPM ( )
    INTERRUPT ON 3 
    BAS (#INITMOV,0 )
 
-   VEL_PTP(5) ;Geschwindikeit PTP in %
-   ACC_PTP(50) ;Beschleunigung PTP in %
-   
+   VEL_PTP(15) ;Geschwindikeit PTP in %
+   ACC_PTP(5) ;Beschleunigung PTP in %
+   VEL_CP(0.6)
    
    My_Home ()
+   ;Sturz_Test()
 
-   Position = 258
+   Position = 1
    FOR i = Position TO len_Punkte STEP 1
-      NagelAnfahren(Punkte[i])
+      Nagel_Nr=Punkte[i]
+      Nagel = Nagel_Frame(Nagel_Nr)
+      ;p1 = {X 0, Y 0, Z 70, A 0, B 90, C -180}
+      ;p3 = {X -7, Y 0, Z 5, A 10, B 90, C 0}
+      Winkel = 360/180*Nagel_Nr
+      ;p1 = {X 0, Y 0, Z 70, A 0, B 160, C 10}
+      p2 =     {X -60, Y 0, Z 40, A 0, B 140, C 10}
+      p21 =    {X -15, Y 0, Z 10, A 0, B 140, C 10}
+      p3 =     {X 0, Y 0, Z 5, A 0, B 140, C 10}
+      ;rr =     {X 0, Y 0, Z 0, A 0, B 0, C 0}
+      ;offset=  {X -1, Y 0, Z 0, A 0, B 0, C 0}
+      ;rwinkel= {X 0, Y 0, Z 0, A 0, B 20, C 0}
+      Stur = Sturz[Nagel_Nr+1]
+      p2.C = Stur
+      p21.C = Stur
+      p3.C = Stur
+      
+      
+      ;ch1 = (Nagel:rwinkel):p3
+      ;rr.A = 90
+      ;ch2 = ((Nagel:rwinkel):rr):p3
+      ;rr.A = 180
+      ;ch3 = ((Nagel:rwinkel):rr):p3
+      ;rr.A = 270
+      ;ch4 = ((Nagel:rwinkel):rr):p3
+      Ry=5
+      Rx=8
+      Ryoff= 2
+      Rxoff= -1
+      
+      p3.X=0+Rxoff
+      p3.Y=Ry+Ryoff
+      p3.Z=5
+      stp3 = (Nagel):p3
+      
+      p3.X=-Rx+Rxoff
+      p3.Y=Ry+Ryoff
+      p3.Z=8
+      ch1 = (Nagel):p3
+      
+      p3.X=Rx+Rxoff
+      p3.Y=Ry+Ryoff
+      p3.Z=4
+      ch2 = (Nagel):p3
+  
+      p3.X=Rx+Rxoff
+      p3.Y=-Ry+Ryoff
+      p3.Z=4
+      ch3 = (Nagel):p3
+      
+      p3.X=-Rx-2+Rxoff
+      p3.Y=-Ry+Ryoff
+      p3.Z=8
+      ch4 = (Nagel):p3
+      
+      IF i==Position Then
+         PTP Nagel:p2
+      ELSE
+         privius_Nagel_Nr=Punkte[i-1]
+         $APO.CDIS = 20
+         stp1 = Stuetzpunkt(privius_Nagel_Nr,Nagel_Nr,0.6, 1):p2
+         stp2 = Stuetzpunkt(privius_Nagel_Nr,Nagel_Nr,0.8, 1):p2
+         $APO.CDIS = 20
+         ZIELP = Nagel:p2
+         
+         KUE_WEG($POS_ACT_MES,stp1)
+         KUE_WEG(stp1,stp2)
+         KUE_WEG(stp2,ZIELP)
+         KUE_WEG(ZIELP,stp3)
+         
+         PTP stp1 C_DIS
+         PTP stp2 C_DIS
+         $APO.CDIS = Ry
+         PTP ZIELP C_DIS
+         
+         LIN stp3 C_DIS
+         $ORI_TYPE = #CONSTANT
+         $CIRC_TYPE = #BASE
+         
+         LIN ch2 C_DIS
+         LIN ch3 C_DIS
+         LIN ch4 C_DIS
+         
+         LIN ch1 C_DIS
+         LIN ch2 C_DIS
+         LIN ch3 C_DIS
+         LIN ch4 C_DIS
+         
+         ;CIRC ch2,ch3, CA 180 C_DIS
+         ;CIRC ch4,ch1, CA 180 C_DIS
+         ;CIRC ch2,ch3, CA 180 C_DIS
+         ;CIRC ch4,ch1, CA 180 C_DIS
+         LIN Nagel:p21 C_DIS
+         PTP Nagel:p2 C_DIS
+         $ORI_TYPE = #JOINT
+         $APO.CDIS = 20
+         
+      ENDIF
+      
       LetztePos = i
+      MsgNotify("Punkt %1 ",, i)
    ENDFOR
   
    
@@ -30,8 +134,6 @@ DEF  Fadenlegen ( )
 END
 
 DEF My_Home ()
-    
-    
     VEL_PTP(5) ;Geschwindikeit PTP in %
     ACC_PTP(100) ;Beschleunigung PTP in %
     TOOL(6)
@@ -39,58 +141,114 @@ DEF My_Home ()
     
     $IPO_MODE = #BASE ;$IPO_MODE tells which of the two frames (tool/base) is stationary
     
-    $APO.CDIS = 100 ;Ãœberschleifparameter
+    $APO.CDIS = 100 ;Überschleifparameter
     
     $H_POS = MyHome
     PTP MyHome 
 END
 
-DEF fahren_PTP ()
+DEF Sturz_Test()
+   DECL INT i, Position
+   DECL REAL Winkel
+   DECL POS myPos
+   Frame p1, p2, p3, p4, ch1,ch2,ch3,ch4, rr,  Nagel
+   E6POS ZIELP, STARTP, stp1, stp2
+
+For I=179 TO 90 STEP -1
+   ;Nagel = Nagel_Pos_Kartesisch(I) ;Nagel_Frame(I)
+   ;$BASE = BASE_DATA[6]:Nagel
+   ;PTP p1
     
-    $IPO_MODE = #BASE ;$IPO_MODE tells which of the two frames (tool/base) is stationary
-    
-    TOOL(6)
-    BASE(6)
-    
-    $APO.CDIS = 100
-    $APO.CPTP = 50 ;Prozentual Ã¼berschleifen
-    
-    PTP test1
-    
-    ;PTP XP3 C_DIS
-  
+   
+endFor
+
 END
 
+DEFFCT FRAME Stuetzpunkt(n1:IN, n2:IN,scal_tran:IN, scal_rot:IN)
+   DECL INT n1, n2
+   DECL REAL scal_rot, scal_tran
+   DECL Frame Stuezpunt, p1, p2
+   Stuezpunt = {X 0, Y 0, Z 0, A 0, B 0, C 0}
+   
+   p1= Nagel_Frame(n1)
+   p2= Nagel_Frame(n2)
+   
+   Stuezpunt.X = p1.X + (p2.X-p1.X)*scal_tran
+   Stuezpunt.Y = p1.Y + (p2.Y-p1.Y)*scal_tran
+   Stuezpunt.A = p1.A + (p2.A-p1.A)*scal_rot
+   Stuezpunt.B = p1.B + (p2.B-p1.B)*scal_rot
+   Stuezpunt.C = p1.C + (p2.C-p1.C)*scal_rot
+   
+   
+   return Stuezpunt
 
-DEF NagelAnfahren(Npos:IN)
+ENDFCT
+
+DEFFCT E6POS Stuetzpunkt_Pos(STARTP:IN, ZIELP:IN,scal_tran:IN, scal_rot:IN)
+   DECL INT n1, n2
+   DECL REAL scal_rot, scal_tran
+   DECL E6POS STARTP, ZIELP, Stuezpunt
+   Stuezpunt = {X 0, Y 0, Z 0, A 0, B 0, C 0}
+   
+   Stuezpunt.X = STARTP.X + (ZIELP.X-STARTP.X)*scal_tran
+   Stuezpunt.Y = STARTP.Y + (ZIELP.Y-STARTP.Y)*scal_tran
+   Stuezpunt.Z = STARTP.Z + (ZIELP.Z-STARTP.Z)*scal_tran
+   Stuezpunt.A = STARTP.A + (ZIELP.A-STARTP.A)*scal_rot
+   Stuezpunt.B = STARTP.B + (ZIELP.B-STARTP.B)*scal_rot
+   Stuezpunt.C = STARTP.C + (ZIELP.C-STARTP.C)*scal_rot
+   
+   KUE_WEG(STARTP,Stuezpunt)
+   return Stuezpunt
+
+ENDFCT
+
+
+
+DEFFCT FRAME Nagel_Frame(Npos:IN)
+;Berücksichtig, dass der Nagel schräg steht. mit dem Sturz wir die Rotation des WZ gegeben
+   DECL INT Npos
+   DECL FRAME Nframe
+   
+   Nframe = (Nagel_Pos(Npos):{X 0, Y 0, Z 0, A 0, B 20, C 0})
+   
+   return Nframe
+   
+ENDFCT
+
+DEFFCT FRAME Nagel_Pos(Npos:IN)
    DECL INT Npos
    DECL REAL Winkel
-   DECL FRAME rot, PosBohren, schwenken
+   DECL FRAME rot, Nframe
 
    Winkel = 360/180*Npos
    
    rot = {X 0, Y 0, Z 0, A 0, B 0, C 0}
-   rot.x = KM.X
-   rot.y = KM.Y
-   rot.Z = 0
-   rot.A = Winkel + 180
-   rot.B = KM.B
-   rot.C = KM.C
+   rot.A = Winkel
    
-   ;Basis Transformation, mot :rot wird der Nulpunkt in die mitte des kreis geschoben und auf den
-   ;gewÃ¼nschten nagel ausgerichtet. Die Trasformation :{X296 ...} schiebt den Nulpunkt schlusentlich nach aussen
-   $BASE = (BASE_DATA[6]:rot):{X 296, Y 0, Z 0, A 0, B 0, C 0}
+   Nframe= rot:{X 292, Y 0, Z 0, A 0, B 0, C 0}
    
-   TOOL(6)
-   VEL_CP(0.05) ;m/s
-   ACC_CP(100)
-   VEL_PTP (2)
-    
-   $ORI_TYPE = #VAR
+   return Nframe
+   
+ENDFCT
 
-   wickeln()
+DEFFCT FRAME Nagel_Pos_Kartesisch(Npos:IN)
+   DECL INT Npos
+   DECL REAL Winkel
+   DECL FRAME rot, Nframe
 
-END
+   Winkel = 360/180*Npos
+   
+   rot = {X 0, Y 0, Z 0, A 0, B 0, C 0}
+   rot.A = Winkel
+   
+   Nframe= rot:{X 292, Y 0, Z 0, A 0, B 0, C 0}
+   Nframe.A = 0
+   Nframe.B = 0
+   Nframe.C = 0
+   return Nframe
+   
+ENDFCT
+
 
 DEF wickeln()
    DECL FRAME p1, p2
@@ -119,7 +277,7 @@ DEF wickeln()
    p1.z = z
    LIN p1
    
-   ;zurÃ¼ck und hoch
+   ;zurück und hoch
    p1.x = -10
    p1.z = -10
    LIN p1
@@ -138,7 +296,7 @@ DEF wickeln()
    p1.z = z
    LIN p1
    
-   ;zurÃ¼ck und hoch
+   ;zurück und hoch
    p1.x = -10
    p1.z = -10
    LIN p1
@@ -163,3 +321,74 @@ DEF wickeln()
 
 END
 
+
+DEF  Fadenlegen_Alt ( )
+   DECL INT i, Position
+      
+   GLOBAL INTERRUPT DECL 3 WHEN $STOPMESS==TRUE DO IR_STOPM ( )
+   INTERRUPT ON 3 
+   BAS (#INITMOV,0 )
+
+   VEL_PTP(5) ;Geschwindikeit PTP in %
+   ACC_PTP(50) ;Beschleunigung PTP in %
+   
+   
+   My_Home ()
+
+   Position = 258
+   FOR i = Position TO len_Punkte STEP 1
+      NagelAnfahren(Punkte[i])
+      LetztePos = i
+   ENDFOR
+  
+   
+   
+   LOOP
+        
+   ENDLOOP 
+
+     
+END
+
+DEF fahren_PTP ()
+    $IPO_MODE = #BASE ;$IPO_MODE tells which of the two frames (tool/base) is stationary
+    
+    TOOL(6)
+    BASE(6)
+    
+    $APO.CDIS = 100
+    $APO.CPTP = 50 ;Prozentual überschleifen
+    
+    PTP test1
+    ;PTP XP3 C_DIS
+END
+
+
+DEF NagelAnfahren(Npos:IN)
+   DECL INT Npos
+   DECL REAL Winkel
+   DECL FRAME rot, PosBohren, schwenken
+
+   Winkel = 360/180*Npos
+   
+   rot = {X 0, Y 0, Z 0, A 0, B 0, C 0}
+   rot.x = KM.X
+   rot.y = KM.Y
+   rot.Z = 0
+   rot.A = Winkel + 180
+   rot.B = KM.B
+   rot.C = KM.C
+   
+   $BASE = (BASE_DATA[6]:rot):{X 296, Y 0, Z 0, A 0, B 0, C 0}
+   
+   TOOL(6)
+   VEL_CP(0.05) ;m/s
+   ACC_CP(100)
+   VEL_PTP (2)
+    
+   $ORI_TYPE = #VAR
+
+   wickeln()
+
+END
+  
